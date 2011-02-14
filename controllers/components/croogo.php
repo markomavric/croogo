@@ -172,6 +172,12 @@ class CroogoComponent extends Object {
                                 'Block.visibility_paths LIKE' => '%"' . $this->controller->params['url']['url'] . '"%',
                                 //'Block.visibility_paths LIKE' => '%"' . 'controller:' . $this->params['controller'] . '"%',
                                 //'Block.visibility_paths LIKE' => '%"' . 'controller:' . $this->params['controller'] . '/' . 'action:' . $this->params['action'] . '"%',
+                                /* mark-0 ( parse exclude sign "-", exclude block on this address, you have to prefix your address with - to use this ;)*/
+				'AND' => array(
+					'Block.visibility_paths LIKE' => '%"-%',
+					'Block.visibility_paths NOT LIKE' => '%"-'.$this->controller->params['url']['url'].'"%'
+				)
+				/* mark-0 end */
                             ),
                         ),
                     ),
