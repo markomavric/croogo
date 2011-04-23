@@ -153,8 +153,32 @@ class CroogoComponent extends Object {
                 'config' => 'croogo_blocks',
             ),
         ));
+        
+	/* mark-0 simple wildcard [link/*] and exclusion [-link] support */ 
+         $cpp = explode('/',$this->controller->params['url']['url']);
+         $cppwildcard = $cppexclude = array();
+         $ccwc = null;
+		 foreach($cpp as $kp=>$cp) {
+		 	$ccwc .= !@empty($ccwc) ? '/'.$cp : $cp;
+		 	array_push($cppwildcard, array('Block.visibility_paths LIKE' => '%"'.$ccwc.'/*'.'"%'));
+		 	array_push($cppexclude, array('Block.visibility_paths NOT LIKE' => '%"-'.$ccwc.'/*'.'"%'));
+		 }
+         
+		$query_visibility_paths = array();
+		$query_visibility_paths['OR'] = Set::merge(array(
+									'Block.visibility_paths' => '',
+									'Block.visibility_paths LIKE' => '%"' . $this->controller->params['url']['url'] . '"%',
+								 ), $cppwildcard);
+								 
+		$query_visibility_paths['OR']['AND'] = Set::merge(array(
+									'Block.visibility_paths LIKE' => '%"-%',
+									'Block.visibility_paths NOT LIKE' => '%"-'.$this->controller->params['url']['url'].'"%'
+								), $cppexclude);
+		
+
         foreach ($regions AS $regionId => $regionAlias) {
             $this->blocks_for_layout[$regionAlias] = array();
+            
             $findOptions = array(
                 'conditions' => array(
                     'Block.status' => 1,
@@ -166,20 +190,7 @@ class CroogoComponent extends Object {
                                 'Block.visibility_roles LIKE' => '%"' . $this->roleId . '"%',
                             ),
                         ),
-                        array(
-                            'OR' => array(
-                                'Block.visibility_paths' => '',
-                                'Block.visibility_paths LIKE' => '%"' . $this->controller->params['url']['url'] . '"%',
-                                //'Block.visibility_paths LIKE' => '%"' . 'controller:' . $this->params['controller'] . '"%',
-                                //'Block.visibility_paths LIKE' => '%"' . 'controller:' . $this->params['controller'] . '/' . 'action:' . $this->params['action'] . '"%',
-                                /* mark-0 ( parse exclude sign "-", exclude block on this address, you have to prefix your address with - to use this ;)*/
-				'AND' => array(
-					'Block.visibility_paths LIKE' => '%"-%',
-					'Block.visibility_paths NOT LIKE' => '%"-'.$this->controller->params['url']['url'].'"%'
-				)
-				/* mark-0 end */
-                            ),
-                        ),
+                        $query_visibility_paths
                     ),
                 ),
                 'order' => array(
